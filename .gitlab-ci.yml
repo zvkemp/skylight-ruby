@@ -1,0 +1,49 @@
+cache:
+  paths:
+    - vendor/bundle
+
+before_script:
+  - gem update --system
+  - gem install bundler
+
+variables:
+  SKYLIGHT_EXT_STRICT: "false"
+  SKYLIGHT_REQUIRED: "true"
+  SKYLIGHT_ENABLE_TRACE_LOGS: "true"
+  SKYLIGHT_TEST_DIR: "/tmp"
+  RAILS_ENV: "development"
+  EMBEDDED_HTTP_SERVER_TIMEOUT: "30"
+  WORKER_SPAWN_TIMEOUT: "15"
+  # COVERAGE: true # FIXME
+
+.run_tests: &run_tests
+  script:
+    - pushd skylight-core
+    - bundle install --path ../vendor/bundle
+    - bundle exec rake
+    - SKYLIGHT_DISABLE_AGENT=true bundle exec rake
+    - popd
+    - bundle install --path vendor/bundle
+    - bundle exec rake
+    - SKYLIGHT_DISABLE_AGENT=true bundle exec rake
+
+sanity:
+  <<: *run_tests
+  stage: build
+  image: ruby:2.6
+  variables:
+    RUBY_GEMFILE: gemfiles/Gemfile.rails-5.2.x
+
+testA:
+  <<: *run_tests
+  stage: test
+  image: ruby:2.3
+  variables:
+    RUBY_GEMFILE: gemfiles/Gemfile.rails-4.2.x
+
+testB:
+  <<: *run_tests
+  stage: test
+  image: ruby:2.6
+  variables:
+    RUBY_GEMFILE: gemfiles/Gemfile.rails-4.2.x
