@@ -1,11 +1,7 @@
 cache:
   paths:
     - vendor/bundle
-
-before_script:
-  - gem update --system
-  - gem install bundler
-  - if [[ "$BUNDLE_GEMFILE" =~ "rails-4.2" ]]; then export BUNDLER_VERSION=1; fi
+    - cc-test-reporter
 
 variables:
   SKYLIGHT_EXT_STRICT: "false"
@@ -15,9 +11,14 @@ variables:
   RAILS_ENV: "development"
   EMBEDDED_HTTP_SERVER_TIMEOUT: "30"
   WORKER_SPAWN_TIMEOUT: "15"
-  # COVERAGE: true # FIXME
+  COVERAGE: "true"
+  COVERAGE_DIR: $CI_PROJECT_DIR/coverage
 
 .run_tests: &run_tests
+  before_script:
+    - gem update --system
+    - gem install bundler
+    - if [[ "$BUNDLE_GEMFILE" =~ "rails-4.2" ]]; then export BUNDLER_VERSION=1; fi
   script:
     - pushd skylight-core
     - bundle install --path ../vendor/bundle
@@ -27,17 +28,34 @@ variables:
     - bundle install --path vendor/bundle
     - bundle exec rake
     - SKYLIGHT_DISABLE_AGENT=true bundle exec rake
+  after_script:
+    - mv $COVERAGE_DIR/.resultset.json $COVERAGE_DIR/coverage-$CI_JOB_ID.json
+  artifacts:
+    paths:
+      - $COVERAGE_DIR/coverage-$CI_JOB_ID.json
+
+.install_codeclimate: &install_codeclimate
+  before_script:
+    - if [[ ! -f cc-test-reporter ]]; then curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter; fi
+    - chmod +x ./cc-test-reporter
 
 stages:
-  - focus
   - sanity
   - test
   - wrapup
+
+codeclimate_setup:
+  stage: sanity
+  image: ruby:2.6
+  <<: *install_codeclimate
+  script:
+    - ./cc-test-reporter before-build
 
 sanity:
   <<: *run_tests
   stage: sanity
   image: ruby:2.6
+  # FIXME: this combines two other before_script aliases
   variables:
     BUNDLE_GEMFILE: $CI_PROJECT_DIR/gemfiles/Gemfile.rails-5.2.x
 
@@ -185,7 +203,7 @@ ruby26-sinatra14-sequel:
 
 ruby26-rails42-mongo:
   <<: *run_tests
-  stage: focus
+  stage: test
   image: ruby:2.6
   services:
     - mongo:3.4-jessie
@@ -196,7 +214,7 @@ ruby26-rails42-mongo:
 
 ruby26-rails42-mongoid:
   <<: *run_tests
-  stage: focus
+  stage: test
   image: ruby:2.6
   services:
     - mongo:3.4-jessie
@@ -208,9 +226,9 @@ ruby26-rails42-mongoid:
 
 ruby26-rails42-elasticsearch:
   <<: *run_tests
-  stage: focus
+  stage: test
   image: ruby:2.6
-  services: 
+  services:
     - elasticsearch:5-alpine
   variables:
     BUNDLE_GEMFILE: $CI_PROJECT_DIR/gemfiles/Gemfile.rails-4.2.x
@@ -265,3 +283,13 @@ ruby-head-rails52:
   image: rubocophq/ruby-snapshot:latest
   variables:
     BUNDLE_GEMFILE: $CI_PROJECT_DIR/gemfiles/Gemfile.rails-5.2.x
+
+codeclimate:
+  stage: wrapup
+  image: ruby:2.6 # can probably use a lighter image, but this one is already cached.
+  <<: *install_codeclimate
+  script:
+    - mkdir -p formatted_coverage
+    - find coverage -name *.json | xargs -I % ./cc-test-reporter format-coverage -t simplecov -o formatted_coverage/% %
+    - ./cc-test-reporter sum-coverage formatted_coverage/**/*.json
+    - ./cc-test-reporter upload-coverage
