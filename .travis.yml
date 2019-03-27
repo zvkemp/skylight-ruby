@@ -47,6 +47,7 @@ before_script:
   - if [[ -n "$COVERAGE" ]]; then ./cc-test-reporter before-build; fi
 
 script:
+  - ruby -e "puts ENV.inspect"
   - pushd skylight-core
   - bundle exec rake
   - SKYLIGHT_DISABLE_AGENT=true COVERAGE_DIR=coverage-disabled-agent bundle exec rake
