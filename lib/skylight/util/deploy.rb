@@ -37,14 +37,18 @@ module Skylight
           nil
         end
 
-        def to_query_string
-          URI.encode_www_form(
+        def to_query
+          {
             timestamp:   timestamp,
             deploy_id:   id.to_s[0..100], # Keep this sane
             git_sha:     git_sha ? git_sha[0..40] : nil, # A valid SHA will never exceed 40
-            description: description ? description[0..255] : nil) # Avoid massive descriptions
+            description: description ? description[0..255] : nil # Avoid massive descriptions
+          }
         end
 
+        def to_query_string
+          URI.encode_www_form(to_query)
+        end
       end
 
       class DefaultDeploy < EmptyDeploy

@@ -552,11 +552,13 @@ authentication: #{self[:authentication]}
     def authentication_with_deploy
       token = get(:authentication)
 
-      if token && deploy
-        deploy_str = deploy.to_query_string
+      if token
+        meta = {}
+        meta.merge!(deploy.to_query) if deploy
+        meta[:component] = "web:#{Rails.env}"
         # A pipe should be a safe delimiter since it's not in the standard token
         # and is encoded by URI
-        token += "|#{deploy_str}"
+        token += "|#{URI.encode_www_form(meta)}"
       end
 
       token
