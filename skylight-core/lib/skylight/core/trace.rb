@@ -92,8 +92,6 @@ module Skylight::Core
       title.freeze if title.is_a?(String)
       desc.freeze  if desc.is_a?(String)
 
-      desc = @instrumenter.limited_description(desc)
-
       time = Util::Clock.nanos - gc_time
 
       stop(start(time, cat, title, desc, nil), time)
@@ -111,18 +109,7 @@ module Skylight::Core
 
       title.freeze if title.is_a?(String)
       desc.freeze  if desc.is_a?(String)
-
-      original_desc = desc
       now           = Util::Clock.nanos
-      desc          = @instrumenter.limited_description(desc)
-
-      if desc == Instrumenter::TOO_MANY_UNIQUES
-        error "[E0002] The number of unique span descriptions allowed per-request has been exceeded " \
-                  "for endpoint: #{endpoint}."
-        debug "original desc=%s", original_desc
-        debug "cat=%s, title=%s, desc=%s", cat, title, desc
-      end
-
       start(now - gc_time, cat, title, desc, meta)
     rescue => e
       maybe_broken(e)

@@ -54,5 +54,8 @@ module Skylight
 
     # E0005
     register(5, "InstrumenterUnrecoverable", "Instrumenter is not running.")
+
+    # E0006
+    register(6, "InvalidUtf8", "Invalid UTF-8")
   end
 end

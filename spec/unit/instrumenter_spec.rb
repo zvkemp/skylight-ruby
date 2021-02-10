@@ -571,28 +571,6 @@ describe "Skylight::Instrumenter", :http, :agent do
         end
       end
     end
-
-    def with_endpoint(endpoint)
-      config[:trace_info].current = Struct.new(:endpoint).new(endpoint)
-      yield
-    ensure
-      config[:trace_info] = nil
-    end
-
-    it "limits unique descriptions to 100" do
-      config[:trace_info] = Struct.new(:current).new
-      instrumenter = Skylight::Instrumenter.new(config)
-
-      with_endpoint("foo#bar") do
-        100.times do
-          description = SecureRandom.hex
-          expect(instrumenter.limited_description(description)).to eq(description)
-        end
-
-        description = SecureRandom.hex
-        expect(instrumenter.limited_description(description)).to eq(Skylight::Instrumenter::TOO_MANY_UNIQUES)
-      end
-    end
   end
 
   context "standalone" do

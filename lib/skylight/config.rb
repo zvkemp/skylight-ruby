@@ -121,6 +121,9 @@ module Skylight
 
     def self.native_env_keys
       @native_env_keys ||= super + %i[
+        native_log_level
+        native_log_file
+        log_sql_parse_errors
         version
         root
         hostname

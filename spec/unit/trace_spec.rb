@@ -235,7 +235,7 @@ module Skylight
       expect(spans[2].event.description).to eq("How a bar is formed?")
     end
 
-    it "limits unique descriptions" do
+    xit "limits unique descriptions" do
       original_raise_on_error = ENV["SKYLIGHT_RAISE_ON_ERROR"]
       ENV["SKYLIGHT_RAISE_ON_ERROR"] = nil
       begin
